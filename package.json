@@ -1,0 +1,26 @@
+{
+  "name": "syslog-server-ts",
+  "version": "0.1.0",
+  "description": "Syslog Server in TypeScript",
+  "main": "index.ts",
+  "dependencies": {
+    "tslib": "^2.6.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SkuldNorniern/syslog-server.git"
+  },
+  "keywords": [
+    "syslog"
+  ],
+  "author": "SkuldNorniern",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/SkuldNorniern/syslog-server/issues"
+  },
+  "homepage": "https://github.com/SkuldNorniern/syslog-server#readme"
+}
