@@ -1,21 +1,26 @@
 import dgram from 'dgram';
 import { EventEmitter } from 'events';
-import { SyslogServerOptions } from './syslogserveroptions';
 import { SyslogMessage } from './syslogmessage';
 import { ErrorObject } from './errorobject';
 import { SyslogServerError } from './syslogservererror';
 
-const DEFAULT_OPTIONS: SyslogServerOptions = { ports: [514], address: '0.0.0.0', exclusive: true };
+export interface SyslogOptions {
+  ports: number[];
+  address: string;
+  exclusive?: boolean;
+}
+
+const DEFAULT_OPTIONS: SyslogOptions = { ports: [514], address: '0.0.0.0', exclusive: true };
 
 class SyslogServer extends EventEmitter {
   private sockets: dgram.Socket[] = [];
 
-  async start(options: SyslogServerOptions = DEFAULT_OPTIONS, cb?: (error: ErrorObject | null, server: SyslogServer) => void): Promise<SyslogServer> {
+  async start(options: SyslogOptions = DEFAULT_OPTIONS, cb?: (error: ErrorObject | null, server: SyslogServer) => void): Promise<SyslogServer> {
     if (this.isRunning()) {
-      const errorObj = this.createErrorObject(null, 'NodeJS Syslog Server is already running!');
-      cb?.(errorObj, this);
-      return Promise.reject(errorObj);
-    }
+        const errorObj = this.createErrorObject(new Error('Syslog Server is already running!'), 'Syslog Server is already running!');
+        cb?.(errorObj, this);
+        return Promise.reject(errorObj);
+	}
 
     try {
       for (const port of options.ports) {
@@ -32,7 +37,7 @@ class SyslogServer extends EventEmitter {
       cb?.(null, this);
       return Promise.resolve(this);
     } catch (err) {
-      const errorObj = this.createErrorObject(err as Error, 'NodeJS Syslog Server failed to start!');
+      const errorObj = this.createErrorObject(err as Error, 'Syslog Server failed to start!');
       cb?.(errorObj, this);
       return Promise.reject(errorObj);
     }
@@ -70,7 +75,7 @@ class SyslogServer extends EventEmitter {
 
   async stop(cb?: (error: ErrorObject | null, server: SyslogServer) => void): Promise<SyslogServer> {
     if (!this.isRunning()) {
-      const errorObj = this.createErrorObject(null, 'NodeJS Syslog Server is not running!');
+      const errorObj = this.createErrorObject(null, 'Syslog Server is not running!');
       cb?.(errorObj, this);
       return Promise.reject(errorObj);
     }
@@ -81,23 +86,23 @@ class SyslogServer extends EventEmitter {
       cb?.(null, this);
       return Promise.resolve(this);
     } catch (err) {
-      const errorObj = this.createErrorObject(err as Error, 'NodeJS Syslog Server failed to stop!');
-      cb?.(errorObj, this);
-      return Promise.reject(errorObj);
-    }
-  }
+			const errorObj = this.createErrorObject(new Error('Syslog Server is not running!'), 'Syslog Server is not running!');
+			cb?.(errorObj, this);
+			return Promise.reject(errorObj);
+		}
+	}
 
-  isRunning(): boolean {
-    return this.sockets.length > 0;
-  }
+	isRunning(): boolean {
+		return this.sockets.length > 0;
+	}
 
-  private createErrorObject(err: Error | null, message: string): ErrorObject {
-    return {
-      date: new Date(),
-      error: err,
-      message: message,
-    };
-  }
+	private createErrorObject(err: Error | null, message: string): ErrorObject {
+		return {
+			date: new Date(),
+			error: err,
+			message: message,
+		};
+	}
 }
 
 export default SyslogServer;
