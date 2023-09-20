@@ -1,8 +1,7 @@
 import dgram from 'dgram';
 import { EventEmitter } from 'events';
 import { SyslogMessage } from './syslogmessage';
-import { ErrorObject } from './errorobject';
-import { SyslogServerError } from './syslogservererror';
+import { ErrorObject, SyslogServerError } from './errorobject';
 
 export interface SyslogOptions {
   ports: number[];
