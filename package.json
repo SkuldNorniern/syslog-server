@@ -4,10 +4,10 @@
   "description": "Syslog Server in TypeScript",
   "main": "src/main.ts",
   "dependencies": {
-    "tslib": "^2.6.2"
+    "typescript": "^5.2.2"
   },
-  "devDependencies": {},
   "scripts": {
+	"build": "tsup",
     "test": "ts-node src/test.ts"
   },
   "repository": {
@@ -22,5 +22,10 @@
   "bugs": {
     "url": "https://github.com/SkuldNorniern/syslog-server/issues"
   },
-  "homepage": "https://github.com/SkuldNorniern/syslog-server#readme"
+  "homepage": "https://github.com/SkuldNorniern/syslog-server#readme",
+  "devDependencies": {
+    "@types/node": "^20.6.2",
+    "tslib": "^2.6.2",
+    "tsup": "^7.2.0"
+  }
 }
