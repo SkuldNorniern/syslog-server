@@ -48,6 +48,18 @@ class SyslogServer extends EventEmitter {
     socket.on('close', this.createCloseHandler());
   }
 
+  onMessage(callback: (message: SyslogMessage) => void) {
+    this.on('message', callback);
+  }
+
+  onError(callback: (error: Error) => void) {
+    this.on('error', callback);
+  }
+
+  onClose(callback: () => void) {
+    this.on('stop', callback);
+  }
+
   private createErrorHandler() {
     return (err: Error) => {
       this.emit('error', err);

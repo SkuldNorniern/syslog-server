@@ -25,12 +25,16 @@ const options: SyslogOptions = {
 
 const server = new SyslogServer();
 
-server.on('message', (message) => {
-  console.log('Received syslog message from ', message);
+server.onMessage((message) => {
+  console.log('Received syslog message:', message);
 });
 
-server.on('error', (error) => {
-  console.error('Error:', error);
+server.onError((error) => {
+  console.error('Error occurred:', error);
+});
+
+server.onClose(() => {
+  console.log('Server closed');
 });
 
 server.start(options).catch((error) => { // If you don't specify any option and leave it as black, the server will listen on 514, 0.0.0.0 and exclusice
