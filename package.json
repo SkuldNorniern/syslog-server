@@ -2,13 +2,13 @@
   "name": "syslog-server-ts",
   "version": "0.1.0",
   "description": "Syslog Server in TypeScript",
-  "main": "index.ts",
+  "main": "src/main.ts",
   "dependencies": {
     "tslib": "^2.6.2"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node src/test.ts"
   },
   "repository": {
     "type": "git",
