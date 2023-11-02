@@ -107,7 +107,6 @@ class SyslogServer extends EventEmitter {
 					const match = regex.exec(messageContent);
 					parsedMessage = match ? { match } : null;
 					break;
-					break;
 			}
 
 			const message: SyslogMessage = {
