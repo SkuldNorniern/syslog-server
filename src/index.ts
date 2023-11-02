@@ -101,6 +101,7 @@ class SyslogServer extends EventEmitter {
 					parsedMessage = parseELF(messageContent);
 					break;
 				case 'NONE':
+					parsedMessage = null;
 					break;
 				default:
 					const regex = new RegExp(formatHint);
