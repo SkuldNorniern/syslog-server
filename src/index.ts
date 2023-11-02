@@ -80,11 +80,9 @@ class SyslogServer extends EventEmitter {
 		return (msg: Buffer, remote: dgram.RemoteInfo) => {
 			const messageContent = msg.toString('utf8');
 			let parsedMessage: object | null = null;
-			console.log("messageContent :",remote.address);
 			const formatHint = this.addressFormatHintMapping.get(remote.address) ?? 'NONE';
 			switch (formatHint){
 				case 'RFC5424':
-					console.log("parrrurururuur");
 					parsedMessage = parseRFC5424(messageContent);
 					break;
 				case 'RFC3164':
@@ -105,15 +103,10 @@ class SyslogServer extends EventEmitter {
 				case 'NONE':
 					break;
 				default:
-					if (formatHint !== 'NONE') {
-						console.log("PARU!");
-						const regex = new RegExp(formatHint);
-						const match = regex.exec(messageContent);
-						console.log("regex :",match);
-						parsedMessage = match ? { match } : null;
-						break;
-					}
-					console.log("not paru!");
+					const regex = new RegExp(formatHint);
+					const match = regex.exec(messageContent);
+					parsedMessage = match ? { match } : null;
+					break;
 					break;
 			}
 
