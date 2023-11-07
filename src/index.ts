@@ -9,16 +9,16 @@ export interface SyslogOptions {
 	ports: number[];
 	address: string;
 	exclusive?: boolean;
-	formatHints?: Map<string, MessageFormatHint>; // remote server's address as key, format hint as parsing method
+	formatHints?: Map<number, MessageFormatHint>; // remote server's address as key, format hint as parsing method
 }
 
 
-const DEFAULT_OPTIONS: SyslogOptions = { ports: [514], address: '0.0.0.0', exclusive: true, formatHints: new Map([["0.0.0.0", 'RFC5424']])};
+const DEFAULT_OPTIONS: SyslogOptions = { ports: [514], address: '0.0.0.0', exclusive: true, formatHints: new Map([[514, 'RFC5424']])};
 
 
 class SyslogServer extends EventEmitter {
 	private sockets: dgram.Socket[] = [];
-	private addressFormatHintMapping: Map<string, MessageFormatHint> = new Map();
+	private addressFormatHintMapping: Map<number, MessageFormatHint> = new Map();
 
 
 	async start(options: SyslogOptions = DEFAULT_OPTIONS, cb?: (error: ErrorObject | null, server: SyslogServer) => void): Promise<SyslogServer> {
@@ -53,7 +53,7 @@ class SyslogServer extends EventEmitter {
 
 	private registerEventHandlers(socket: dgram.Socket, port: number) {
 		socket.on('error', this.createErrorHandler());
-		socket.on('message', this.createMessageHandler());
+		socket.on('message', this.createMessageHandler(socket));
 		socket.on('close', this.createCloseHandler());
 	}
 
@@ -75,12 +75,14 @@ class SyslogServer extends EventEmitter {
 		};
 	}
 
-	private createMessageHandler() {
+	private createMessageHandler(socket: dgram.Socket) {
 		
 		return (msg: Buffer, remote: dgram.RemoteInfo) => {
+			const socketInfo = socket.address();
+			const localPort = socketInfo.port;
 			const messageContent = msg.toString('utf8');
 			let parsedMessage: object | null = null;
-			const formatHint = this.addressFormatHintMapping.get(remote.address) ?? 'NONE';
+			const formatHint = this.addressFormatHintMapping.get(localPort) ?? 'NONE';
 			switch (formatHint){
 				case 'RFC5424':
 					parsedMessage = parseRFC5424(messageContent);
