@@ -1,6 +1,6 @@
 # Syslog Server
 
-A simple and robust Syslog server implementation in TypeScript.
+A simple and robust Syslog server with Syslog Parser implementation in TypeScript.
 
 ## Installation
 
@@ -21,6 +21,7 @@ const options: SyslogOptions = {
   ports: [514, 515, 516], // Specify the ports you want the server to listen on
   address: '0.0.0.0',
   exclusive: true,
+  formatHints: new Map([514, 'rfc5424'], [515, 'LEEF'], [516, 'ELF']),
 };
 
 const server = new SyslogServer();
@@ -74,6 +75,7 @@ An object with the following properties:
 - `ports`: An array of port numbers that the server should listen on.
 - `address`: The address that the server should bind to.
 - `exclusive`: A boolean indicating whether the server should have exclusive control over the ports.
+- `formatHints`: A map of port numbers to format hints for the server to use.
 
 ## Contributing
 
