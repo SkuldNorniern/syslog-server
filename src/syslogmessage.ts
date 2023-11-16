@@ -1,53 +1,53 @@
 import { RFC5424Message, RFC3164Message, LEEFMessage, CEFMessage, CLFMessage, ELFMessage} from './parsedMessage';
 
 export interface SyslogMessage {
-  date: Date;
-  host: string;
-  message: string;
-  protocol: string;
-  parsedMessage: object | null;
+	date: Date;
+	host: string;
+	message: string;
+	protocol: string;
+	parsedMessage: object | null;
 }
 
 export function parseRFC5424(message: string): RFC5424Message | null {
-  const regex = /<(\d+)>(\d+) (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z) ([a-zA-Z0-9.-]+) ([a-zA-Z0-9.-]+) ([a-zA-Z0-9.-]+) ([a-zA-Z0-9.-]+) \[([^\]]+)\] (.+)/;
-  const match = regex.exec(message);
-  
-  if (match) {
-    return {
-      priority: parseInt(match[1], 10),
-      version: parseInt(match[2], 10),
-      timestamp: new Date(match[3]),
-      hostname: match[4],
-      appName: match[5],
-      procId: match[6],
-      msgId: match[7],
-      structuredData: match[8],
-      msg: match[9],
-    };
-  }
+	const regex = /<(\d+)>(\d+) (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z) ([a-zA-Z0-9.-]+) ([a-zA-Z0-9.-]+) ([a-zA-Z0-9.-]+) ([a-zA-Z0-9.-]+) \[([^\]]+)\] (.+)/;
+	const match = regex.exec(message);
 
-  return null;
+	if (match) {
+		return {
+			priority: parseInt(match[1], 10),
+			version: parseInt(match[2], 10),
+			timestamp: new Date(match[3]),
+			hostname: match[4],
+			appName: match[5],
+			procId: match[6],
+			msgId: match[7],
+			structuredData: match[8],
+			msg: match[9],
+		};
+	}
+
+	return null;
 }
 
 export function parseRFC3164(message: string): RFC3164Message | null {
-  const regex = /<(\d+)>([a-zA-Z]{3} \d{1,2} \d{2}:\d{2}:\d{2}) ([a-zA-Z0-9.-]+) (.+)/;
-  const match = regex.exec(message);
+	const regex = /<(\d+)>([a-zA-Z]{3} \d{1,2} \d{2}:\d{2}:\d{2}) ([a-zA-Z0-9.-]+) (.+)/;
+	const match = regex.exec(message);
 
-  if (match) {
-    return {
-      priority: parseInt(match[1], 10),
-      timestamp: new Date(match[2]),
-      hostname: match[3],
-      msg: match[4],
-    };
-  }
+	if (match) {
+		return {
+			priority: parseInt(match[1], 10),
+			timestamp: new Date(match[2]),
+			hostname: match[3],
+			msg: match[4],
+		};
+	}
 
-  return null;
+	return null;
 }
 
 export function parseLEEF(message: string): LEEFMessage | null {
-  const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
-  const match = regex.exec(message);
+	const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
+	const match = regex.exec(message);
 
 	if (match) {
 		const nameValuePairs = match[6].split('|').reduce((obj: Record<string, any>, pair) => {
@@ -149,4 +149,10 @@ export function parseELF(message: string): ELFMessage | null {
 	}
 
 	return null;
+}
+
+export function parseCustom(formatHint: string, message: string): object | null {
+	const regex = new RegExp(formatHint);
+	const match = regex.exec(message);
+	return match ? { match } : null;
 }
