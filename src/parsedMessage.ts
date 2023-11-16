@@ -25,7 +25,6 @@ export interface LEEFMessage {
   eventId: string;
   nameValuePairs: { [key: string]: string };
 }
-// ... (existing interfaces)
 
 export interface CEFMessage {
   cefVersion: string;
