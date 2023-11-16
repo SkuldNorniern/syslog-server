@@ -1,6 +1,6 @@
 import dgram from 'dgram';
 import { EventEmitter } from 'events';
-import { SyslogMessage, parseRFC5424, parseRFC3164, parseLEEF, parseCEF, parseCLF, parseELF } from './syslogmessage';
+import { SyslogMessage, parseRFC5424, parseRFC3164, parseLEEF, parseCEF, parseCLF, parseELF, parseCustom } from './syslogmessage';
 import { ErrorObject, SyslogServerError } from './errorobject';
 
 export type MessageFormatHint = 'RFC5424' | 'RFC3164' | 'LEEF' | 'CEF' | 'CLF' | 'ELF' | 'NONE' | string;
@@ -21,40 +21,46 @@ class SyslogServer extends EventEmitter {
 	private addressFormatHintMapping: Map<number, MessageFormatHint> = new Map();
 
 
-	async start(options: SyslogOptions = DEFAULT_OPTIONS, cb?: (error: ErrorObject | null, server: SyslogServer) => void): Promise<SyslogServer> {
+	async start(options: SyslogOptions = DEFAULT_OPTIONS): Promise<SyslogServer> {
 		if (this.isRunning()) {
-			const errorObj = this.createErrorObject(new Error('Syslog Server is already running!'), 'Syslog Server is already running!');
-			cb?.(errorObj, this);
-			return Promise.reject(errorObj);
-		}
+            throw new SyslogServerError('Syslog Server is already running!');
+        }
 
 		try {
 			this.addressFormatHintMapping = options.formatHints ?? new Map();
-			for (let i = 0; i < options.ports.length; i++) {
-				const port = options.ports[i];
-				const socket = dgram.createSocket('udp4');
-				await new Promise((resolve, reject) => {
-					socket.on('listening', () => resolve(null));
-					socket.on('error', (err) => reject(err));
-					socket.bind({ port, address: options.address, exclusive: options.exclusive });
-				});
-				this.registerEventHandlers(socket, port); // Pass the port instead of format hint
-				this.sockets.push(socket);
-			}
+			for (const port of options.ports) {
+                await this.createAndBindSocket(port, options);
+            }
 			this.emit('start', this);
-			cb?.(null, this);
-			return Promise.resolve(this);
+			return this;
 		} catch (err) {
-			const errorObj = this.createErrorObject(err as Error, 'Syslog Server failed to start!');
-			cb?.(errorObj, this);
-			return Promise.reject(errorObj);
+			if (err instanceof Error) {
+				throw new SyslogServerError('Syslog Server failed to start!', err);
+			} else {
+				// Handle the case where err is not an Error object
+				throw new SyslogServerError('Syslog Server failed to start! An unknown error occurred.');
+			}
 		}
+
+	}
+
+	private async createAndBindSocket(port: number, options: SyslogOptions): Promise<void> {
+		const socket = dgram.createSocket('udp4');
+		this.registerEventHandlers(socket, port);
+
+		await new Promise((resolve, reject) => {
+			socket.on('listening', () => resolve(null));
+			socket.on('error', err => reject(err));
+			socket.bind({ port, address: options.address, exclusive: options.exclusive });
+		});
+
+		this.sockets.push(socket);
 	}
 
 	private registerEventHandlers(socket: dgram.Socket, port: number) {
-		socket.on('error', this.createErrorHandler());
-		socket.on('message', this.createMessageHandler(socket));
-		socket.on('close', this.createCloseHandler());
+		socket.on('error', err => this.emit('error', err));
+		socket.on('message', (msg, remote) => this.handleMessage(msg, remote, socket));
+		socket.on('close', () => this.emit('stop'));
 	}
 
 	onMessage(callback: (message: SyslogMessage) => void) {
@@ -69,87 +75,53 @@ class SyslogServer extends EventEmitter {
 		this.on('stop', callback);
 	}
 
-	private createErrorHandler() {
-		return (err: Error) => {
-			this.emit('error', err);
+	private handleMessage(msg: Buffer, remote: dgram.RemoteInfo, socket: dgram.Socket) {
+		const messageContent = msg.toString('utf8');
+		const formatHint = this.addressFormatHintMapping.get(socket.address().port) ?? 'NONE';
+		const parsedMessage: object | null = this.parseMessage(formatHint, messageContent);
+
+		const message: SyslogMessage = {
+			date: new Date(),
+			host: remote.address,
+			message: messageContent,
+			protocol: remote.family,
+			parsedMessage,
 		};
+
+		this.emit('message', message);
 	}
 
-	private createMessageHandler(socket: dgram.Socket) {
-		
-		return (msg: Buffer, remote: dgram.RemoteInfo) => {
-			const socketInfo = socket.address();
-			const localPort = socketInfo.port;
-			const messageContent = msg.toString('utf8');
-			let parsedMessage: object | null = null;
-			const formatHint = this.addressFormatHintMapping.get(localPort) ?? 'NONE';
-			switch (formatHint){
-				case 'RFC5424':
-					parsedMessage = parseRFC5424(messageContent);
-					break;
-				case 'RFC3164':
-					parsedMessage = parseRFC3164(messageContent);
-					break;
-				case 'LEEF':
-					parsedMessage = parseLEEF(messageContent);
-					break;
-				case 'CEF':
-					parsedMessage = parseCEF(messageContent);
-					break;
-				case 'CLF':
-					parsedMessage = parseCLF(messageContent);
-					break;
-				case 'ELF':
-					parsedMessage = parseELF(messageContent);
-					break;
-				case 'NONE':
-					parsedMessage = null;
-					break;
-				default:
-					const regex = new RegExp(formatHint);
-					const match = regex.exec(messageContent);
-					parsedMessage = match ? { match } : null;
-					break;
+	private parseMessage(formatHint: MessageFormatHint, messageContent: string): object | null {
+		switch (formatHint) {
+			case 'RFC5424': return parseRFC5424(messageContent);
+			case 'RFC3164': return parseRFC3164(messageContent);
+			case 'LEEF': return parseLEEF(messageContent);
+			case 'CEF': return parseCEF(messageContent);
+			case 'CLF': return parseCLF(messageContent);
+			case 'ELF': return parseELF(messageContent);
+			case 'NONE': return null;
+			default: return parseCustom(formatHint, messageContent);
+		}
+	}
+
+	async stop(): Promise<SyslogServer> {
+        if (!this.isRunning()) {
+            throw new SyslogServerError('Syslog Server is not running!');
+        }
+
+        try {
+            await Promise.all(this.sockets.map(socket => new Promise(resolve => socket.close(() => resolve(null)))));
+            this.sockets = [];
+            return this;
+        } catch (err) {
+			if (err instanceof Error) {
+				throw new SyslogServerError('Failed to stop Syslog Server', err);
+			} else {
+				// Handle the case where err is not an Error object
+				throw new SyslogServerError('Syslog Server failed to start!! An unknown error occurred.');
 			}
-
-			const message: SyslogMessage = {
-				date: new Date(),
-				host: remote.address,
-				message: messageContent,
-				protocol: remote.family,
-				parsedMessage,
-			};
-
-			this.emit('message', message);
-		};
-	}
-
-
-	private createCloseHandler() {
-		return () => {
-			this.emit('stop');
-		};
-	}
-
-	async stop(cb?: (error: ErrorObject | null, server: SyslogServer) => void): Promise<SyslogServer> {
-		if (!this.isRunning()) {
-			const errorObj = this.createErrorObject(null, 'Syslog Server is not running!');
-			cb?.(errorObj, this);
-			return Promise.reject(errorObj);
 		}
-
-		try {
-			await Promise.all(this.sockets.map(socket => new Promise(resolve => socket.close(() => resolve(null)))));
-			this.sockets = [];
-			cb?.(null, this);
-			return Promise.resolve(this);
-		} catch (err) {
-			const errorObj = this.createErrorObject(new Error('Syslog Server is not running!'), 'Syslog Server is not running!');
-			cb?.(errorObj, this);
-			return Promise.reject(errorObj);
-		}
-	}
-
+    }
 	isRunning(): boolean {
 		return this.sockets.length > 0;
 	}
