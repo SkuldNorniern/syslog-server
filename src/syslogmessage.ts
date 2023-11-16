@@ -46,21 +46,25 @@ export function parseRFC3164(message: string): RFC3164Message | null {
 }
 
 export function parseLEEF(message: string): LEEFMessage | null {
-	const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
+	// const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
+	const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|(.+))?/;
 	const match = regex.exec(message);
 
 	if (match) {
-		const nameValuePairs = match[6].split('|').reduce((obj: Record<string, any>, pair) => {
-			const [name, value] = pair.split('=');
-			if (value) {
-				obj[name] = value.replace(/^"|"$/g, ''); // Remove quotes if present
-			} else {
-				obj[name] = null; // or some other default value
-			}
-			return obj;
-		}, {}) || {};
+		let nameValuePairs = {};
 
-
+		// Only process name-value pairs if they are present
+		if (match[6]) {
+			nameValuePairs = match[6].split('|').reduce((obj: Record<string, any>, pair) => {
+				const [name, value] = pair.split('=');
+				if (value) {
+					obj[name] = value.replace(/^"|"$/g, ''); // Remove quotes if present
+				} else {
+					obj[name] = null; // or some other default value
+				}
+				return obj;
+			}, {});
+		}
 
 		return {
 			version: match[1],
