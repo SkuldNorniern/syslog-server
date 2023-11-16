@@ -94,5 +94,31 @@ describe('Parser Tests', () => {
       userAgent: 'Mozilla/4.08 [en] (Win98; I ;Nav)',
     });
   });
+	test('parseRFC5424 should handle edge case formats', () => {
+		const invalidMessage = 'invalid message';
+		expect(parseRFC5424(invalidMessage)).toBeNull();
+	});
+
+	test('parseRFC3164 should handle edge case formats', () => {
+		const edgeCaseMessage = 'invalid message';
+		expect(parseRFC3164(edgeCaseMessage)).toBeNull();
+	});
+	test('parseLEEF should handle edge case formats', () => {
+		
+		const edgeCaseMessage = 'invalid message';
+		expect(parseLEEF(edgeCaseMessage)).toBeNull();
+	});
+	test('parseCEF should handle edge case formats', () => {
+		const edgeCaseMessage = 'invalid message';
+		expect(parseCEF(edgeCaseMessage)).toBeNull();
+	});
+	test('parseCLF should handle edge case formats', () => {
+		const edgeCaseMessage = 'invalid message';
+		expect(parseCLF(edgeCaseMessage)).toBeNull();
+	});
+	test('parseELF should handle edge case formats', () => {
+		const edgeCaseMessage = 'invalid message';
+		expect(parseELF(edgeCaseMessage)).toBeNull();
+	});
 });
 
