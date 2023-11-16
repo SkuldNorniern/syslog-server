@@ -78,6 +78,19 @@ An object with the following properties:
 - `exclusive`: A boolean indicating whether the server should have exclusive control over the ports.
 - `formatHints`: A map of port numbers to format hints for the server to use.
 
+#### formatHints Type List
+
+- `RFC5424`: The format hint for RFC5424.
+- `RFC3164`: The format hint for RFC3164.
+- `LEEF`: The format hint for LEEF.
+- `JSON`: The format hint for JSON.
+- `CEF`: The format hint for CEF.
+- `CLF`: The format hint for CLF.
+- `ELF`: The format hint for ELF.
+- `Regex`: The format hint for Regex.
+  - Example: `'\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}'`
+- `NONE` : No format hint
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request on the [GitHub repository](https://github.com/yourusername/syslog-server-ts).
