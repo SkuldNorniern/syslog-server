@@ -1,3 +1,4 @@
+[![NPM version][npm-image]][npm-url]
 # Syslog Server
 
 A simple and robust Syslog server with Syslog Parser implementation in TypeScript.
@@ -80,3 +81,7 @@ An object with the following properties:
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request on the [GitHub repository](https://github.com/yourusername/syslog-server-ts).
+
+
+[npm-image]: https://img.shields.io/npm/v/syslog-server-ts.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/syslog-server-ts
