@@ -54,8 +54,8 @@ describe('Parser Tests', () => {
 			deviceVersion: 'Version',
 			eventId: 'EventID',
 			nameValuePairs: {
-				cat: null,
-				severity: null
+				cat: '',
+				severity: ''
 			}
 		});
 	});
@@ -71,7 +71,7 @@ describe('Parser Tests', () => {
 			eventId: 'EventID',
 			nameValuePairs: {
 				cat: 'Security',
-				severity: null
+				severity: ''
 			}
 		});
 	});

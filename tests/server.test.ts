@@ -1,4 +1,5 @@
 import SyslogServer from '../src';
+import dgram from 'dgram';
 
 describe('SyslogServer', () => {
 	let server: SyslogServer;
@@ -44,6 +45,14 @@ describe('SyslogServer', () => {
 
 		expect(stopSpy).toHaveBeenCalled();
 	});
+	
+	test('should correctly report running state', async () => {
+		expect(server.isRunning()).toBe(false);
+		await server.start();
+		expect(server.isRunning()).toBe(true);
+		await server.stop();
+		expect(server.isRunning()).toBe(false);
+	});
 
 	test('should throw an error when starting an already running server', (done) => {
 		server.start().then(() => {
@@ -67,12 +76,16 @@ describe('SyslogServer', () => {
 		});
 	});
 
-	test('should correctly report running state', async () => {
-		expect(server.isRunning()).toBe(false);
-		await server.start();
-		expect(server.isRunning()).toBe(true);
-		await server.stop();
-		expect(server.isRunning()).toBe(false);
+	test('should handle socket creation error', async () => {
+		const mockBind = jest.fn().mockImplementation((_, callback) => {
+			callback(new Error('Test bind error'));
+		});
+		dgram.createSocket = jest.fn().mockReturnValue({ bind: mockBind, on: jest.fn(), close: jest.fn() });
+
+		await expect(server.start()).rejects.toThrow('Syslog Server failed to start!');
 	});
+
+
+
 
 });

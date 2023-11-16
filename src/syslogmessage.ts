@@ -46,37 +46,31 @@ export function parseRFC3164(message: string): RFC3164Message | null {
 }
 
 export function parseLEEF(message: string): LEEFMessage | null {
-	// const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
-	const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|(.+))?/;
-	const match = regex.exec(message);
+    const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|(.+))?/;
+    const match = regex.exec(message);
 
-	if (match) {
-		let nameValuePairs = {};
+    if (match) {
+        let nameValuePairs: Record<string, string> = {};
 
-		// Only process name-value pairs if they are present
-		if (match[6]) {
-			nameValuePairs = match[6].split('|').reduce((obj: Record<string, any>, pair) => {
-				const [name, value] = pair.split('=');
-				if (value) {
-					obj[name] = value.replace(/^"|"$/g, ''); // Remove quotes if present
-				} else {
-					obj[name] = null; // or some other default value
-				}
-				return obj;
-			}, {});
-		}
+        if (match[6]) {
+            nameValuePairs = match[6].split('|').reduce((obj: Record<string, string>, pair) => {
+                const [name, value] = pair.split('=');
+                obj[name] = value ? value.replace(/^"|"$/g, '') : '';
+                return obj;
+            }, {});
+        }
 
-		return {
-			version: match[1],
-			deviceVendor: match[2],
-			deviceProduct: match[3],
-			deviceVersion: match[4],
-			eventId: match[5],
-			nameValuePairs,
-		};
-	}
+        return {
+            version: match[1],
+            deviceVendor: match[2],
+            deviceProduct: match[3],
+            deviceVersion: match[4],
+            eventId: match[5],
+            nameValuePairs,
+        };
+    }
 
-	return null;
+    return null;
 }
 
 
@@ -87,31 +81,31 @@ export function parseJSON(message: string): object | null {
 		return null;
 	}
 }
+
 export function parseCEF(message: string): CEFMessage | null {
-	const regex = /CEF:(\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
-	const match = regex.exec(message);
+    const regex = /CEF:(\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
+    const match = regex.exec(message);
 
-	if (match) {
-		const extension = match[8].split(' ').reduce((obj: Record<string, any>, pair: string) => {
-			const [name, value] = pair.split('=');
-			obj[name] = value;
-			return obj;
-		}, {});
+    if (match) {
+        const extension = match[8].split(' ').reduce((obj: Record<string, string>, pair: string) => {
+            const [name, value] = pair.split('=');
+            obj[name] = value;
+            return obj;
+        }, {});
 
+        return {
+            cefVersion: match[1],
+            deviceVendor: match[2],
+            deviceProduct: match[3],
+            deviceVersion: match[4],
+            deviceEventClassId: match[5],
+            name: match[6],
+            severity: match[7],
+            extension,
+        };
+    }
 
-		return {
-			cefVersion: match[1],
-			deviceVendor: match[2],
-			deviceProduct: match[3],
-			deviceVersion: match[4],
-			deviceEventClassId: match[5],
-			name: match[6],
-			severity: match[7],
-			extension,
-		};
-	}
-
-	return null;
+    return null;
 }
 
 
