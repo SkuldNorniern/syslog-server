@@ -3,6 +3,7 @@ import { RFC5424Message, RFC3164Message, LEEFMessage, CEFMessage, CLFMessage, EL
 export interface SyslogMessage {
 	date: Date;
 	host: string;
+	port: number;
 	message: string;
 	protocol: string;
 	parsedMessage: object | null;

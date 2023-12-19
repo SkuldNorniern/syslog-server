@@ -83,6 +83,7 @@ class SyslogServer extends EventEmitter {
 		const message: SyslogMessage = {
 			date: new Date(),
 			host: remote.address,
+			port: socket.address().port,
 			message: messageContent,
 			protocol: remote.family,
 			parsedMessage,
