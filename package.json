@@ -1,7 +1,7 @@
 {
   "name": "syslog-server-ts",
   "package-name": "syslog-server-ts",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Syslog Server in TypeScript, With parser",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
