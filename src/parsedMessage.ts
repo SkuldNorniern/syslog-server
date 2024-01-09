@@ -24,6 +24,7 @@ export interface LEEFMessage {
   deviceVersion: string;
   eventId: string;
   nameValuePairs: { [key: string]: string };
+  nameValueRaw: string;
 }
 
 export interface CEFMessage {
@@ -35,6 +36,7 @@ export interface CEFMessage {
   name: string;
   severity: string;
   extension: { [key: string]: string };
+  extensionRaw: string;
 }
 
 export interface CLFMessage {

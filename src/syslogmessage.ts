@@ -52,8 +52,10 @@ export function parseLEEF(message: string): LEEFMessage | null {
 
     if (match) {
         let nameValuePairs: Record<string, string> = {};
+		let nameValueRaw = '';
 
         if (match[6]) {
+			nameValueRaw = match[6];
             nameValuePairs = match[6].split('|').reduce((obj: Record<string, string>, pair) => {
                 const [name, value] = pair.split('=');
                 obj[name] = value ? value.replace(/^"|"$/g, '') : '';
@@ -68,6 +70,7 @@ export function parseLEEF(message: string): LEEFMessage | null {
             deviceVersion: match[4],
             eventId: match[5],
             nameValuePairs,
+			nameValueRaw,
         };
     }
 
@@ -88,6 +91,7 @@ export function parseCEF(message: string): CEFMessage | null {
     const match = regex.exec(message);
 
     if (match) {
+		const extensionRaw = match[8];
         const extension = match[8].split(' ').reduce((obj: Record<string, string>, pair: string) => {
             const [name, value] = pair.split('=');
             obj[name] = value;
@@ -103,6 +107,7 @@ export function parseCEF(message: string): CEFMessage | null {
             name: match[6],
             severity: match[7],
             extension,
+			extensionRaw,
         };
     }
 
