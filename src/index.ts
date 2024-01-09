@@ -136,4 +136,5 @@ class SyslogServer extends EventEmitter {
 	}
 }
 
-export { SyslogServer, SyslogMessage, SyslogServerError};
+export { SyslogMessage, SyslogServerError};
+export default SyslogServer;
