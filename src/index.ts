@@ -2,35 +2,47 @@ import dgram from 'dgram';
 import { EventEmitter } from 'events';
 import { SyslogMessage, parseRFC5424, parseRFC3164, parseLEEF, parseCEF, parseCLF, parseELF, parseCustom } from './syslogmessage';
 import { ErrorObject, SyslogServerError } from './errorobject';
+import net from 'net';
 
 export type MessageFormatHint = 'RFC5424' | 'RFC3164' | 'LEEF' | 'CEF' | 'CLF' | 'ELF' | 'NONE' | string;
 
-export interface SyslogOptions {
-	ports: number[];
-	address: string;
-	exclusive?: boolean;
-	formatHints?: Map<number, MessageFormatHint>; // remote server's address as key, format hint as parsing method
+export type ProtocolType = 'TCP' | 'UDP';
+
+export interface PortConfig {
+	port: number;
+	protocol: ProtocolType;
+	formatHint?: MessageFormatHint;
 }
 
+export interface SyslogOptions {
+	ports: PortConfig[];
+	address: string;
+	exclusive?: boolean;
+}
 
-const DEFAULT_OPTIONS: SyslogOptions = { ports: [514], address: '0.0.0.0', exclusive: true, formatHints: new Map([[514, 'RFC5424']])};
-
+const DEFAULT_OPTIONS: SyslogOptions = {
+	ports: [{ port: 514, protocol: 'UDP', formatHint: 'RFC5424' }],
+	address: '0.0.0.0',
+	exclusive: true
+};
 
 class SyslogServer extends EventEmitter {
-	private sockets: dgram.Socket[] = [];
+	private udpSockets: dgram.Socket[] = [];
+	private tcpSockets: net.Server[] = [];
 	private addressFormatHintMapping: Map<number, MessageFormatHint> = new Map();
-
 
 	async start(options: SyslogOptions = DEFAULT_OPTIONS): Promise<SyslogServer> {
 		if (this.isRunning()) {
-            throw new SyslogServerError('Syslog Server is already running!');
-        }
+			throw new SyslogServerError('Syslog Server is already running!');
+		}
 
 		try {
-			this.addressFormatHintMapping = options.formatHints ?? new Map();
-			for (const port of options.ports) {
-                await this.createAndBindSocket(port, options);
-            }
+			for (const portConfig of options.ports) {
+				if (portConfig.formatHint) {
+					this.addressFormatHintMapping.set(portConfig.port, portConfig.formatHint);
+				}
+				await this.createAndBindSocket(portConfig, options);
+			}
 			this.emit('start', this);
 			return this;
 		} catch (err) {
@@ -41,25 +53,83 @@ class SyslogServer extends EventEmitter {
 				throw new SyslogServerError('Syslog Server failed to start! An unknown error occurred.');
 			}
 		}
-
 	}
 
-	private async createAndBindSocket(port: number, options: SyslogOptions): Promise<void> {
+	private async createAndBindSocket(portConfig: PortConfig, options: SyslogOptions): Promise<void> {
+		if (portConfig.protocol === 'UDP') {
+			await this.createUDPSocket(portConfig, options);
+		} else {
+			await this.createTCPSocket(portConfig, options);
+		}
+	}
+
+	private async createUDPSocket(portConfig: PortConfig, options: SyslogOptions): Promise<void> {
 		const socket = dgram.createSocket('udp4');
-		this.registerEventHandlers(socket, port);
+		this.registerUDPEventHandlers(socket, portConfig.port);
 
 		await new Promise((resolve, reject) => {
 			socket.on('listening', () => resolve(null));
 			socket.on('error', err => reject(err));
-			socket.bind({ port, address: options.address, exclusive: options.exclusive });
+			socket.bind({ port: portConfig.port, address: options.address, exclusive: options.exclusive });
 		});
 
-		this.sockets.push(socket);
+		this.udpSockets.push(socket);
 	}
 
-	private registerEventHandlers(socket: dgram.Socket, port: number) {
+	private async createTCPSocket(portConfig: PortConfig, options: SyslogOptions): Promise<void> {
+		const server = net.createServer();
+		this.registerTCPEventHandlers(server, portConfig.port);
+
+		await new Promise((resolve, reject) => {
+			server.on('listening', () => resolve(null));
+			server.on('error', err => reject(err));
+			server.listen(portConfig.port, options.address);
+		});
+
+		this.tcpSockets.push(server);
+	}
+
+	private registerTCPEventHandlers(server: net.Server, port: number) {
+		server.on('error', err => this.emit('error', err));
+		server.on('close', () => this.emit('stop'));
+		
+		server.on('connection', (socket) => {
+			let messageBuffer = '';
+			
+			socket.on('data', (data) => {
+				messageBuffer += data.toString('utf8');
+				
+				// Split on newline to handle multiple messages
+				const messages = messageBuffer.split('\n');
+				messageBuffer = messages.pop() || ''; // Keep the last incomplete message
+
+				messages.forEach(msg => {
+					if (msg) {
+						const mockSocket = dgram.createSocket('udp4');
+						mockSocket.bind({ port });
+						this.handleMessage(
+							Buffer.from(msg),
+							{ 
+								address: socket.remoteAddress || 'unknown', 
+								family: 'IPv4', 
+								port: socket.remotePort || 0,
+								size: 0
+							},
+							mockSocket
+						);
+					}
+				});
+			});
+		});
+	}
+
+	private registerUDPEventHandlers(socket: dgram.Socket, port: number) {
 		socket.on('error', err => this.emit('error', err));
-		socket.on('message', (msg, remote) => this.handleMessage(msg, remote, socket));
+		socket.on('message', (msg, remote) => this.handleMessage(
+			msg, 
+			remote, 
+			socket
+		));
 		socket.on('close', () => this.emit('stop'));
 	}
 
@@ -106,15 +176,19 @@ class SyslogServer extends EventEmitter {
 	}
 
 	async stop(): Promise<SyslogServer> {
-        if (!this.isRunning()) {
-            throw new SyslogServerError('Syslog Server is not running!');
-        }
+		if (!this.isRunning()) {
+			throw new SyslogServerError('Syslog Server is not running!');
+		}
 
-        try {
-            await Promise.all(this.sockets.map(socket => new Promise(resolve => socket.close(() => resolve(null)))));
-            this.sockets = [];
-            return this;
-        } catch (err) {
+		try {
+			await Promise.all([
+				...this.udpSockets.map(socket => new Promise(resolve => socket.close(() => resolve(null)))),
+				...this.tcpSockets.map(server => new Promise(resolve => server.close(() => resolve(null))))
+			]);
+			this.udpSockets = [];
+			this.tcpSockets = [];
+			return this;
+		} catch (err) {
 			if (err instanceof Error) {
 				throw new SyslogServerError('Failed to stop Syslog Server', err);
 			} else {
@@ -122,9 +196,10 @@ class SyslogServer extends EventEmitter {
 				throw new SyslogServerError('Syslog Server failed to start!! An unknown error occurred.');
 			}
 		}
-    }
+	}
+
 	isRunning(): boolean {
-		return this.sockets.length > 0;
+		return this.udpSockets.length > 0 || this.tcpSockets.length > 0;
 	}
 
 	private createErrorObject(err: Error | null, message: string): ErrorObject {
