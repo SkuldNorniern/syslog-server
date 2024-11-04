@@ -105,18 +105,19 @@ class SyslogServer extends EventEmitter {
 
 				messages.forEach(msg => {
 					if (msg) {
-						const mockSocket = dgram.createSocket('udp4');
-						mockSocket.bind({ port });
-						this.handleMessage(
-							Buffer.from(msg),
-							{ 
-								address: socket.remoteAddress || 'unknown', 
-								family: 'IPv4', 
-								port: socket.remotePort || 0,
-								size: 0
-							},
-							mockSocket
-						);
+						const message: SyslogMessage = {
+							date: new Date(),
+							host: socket.remoteAddress || 'unknown',
+							port: port,
+							message: msg,
+							protocol: 'IPv4',
+							parsedMessage: this.parseMessage(
+								this.addressFormatHintMapping.get(port) ?? 'NONE',
+								msg
+							),
+						};
+						
+						this.emit('message', message);
 					}
 				});
 			});
