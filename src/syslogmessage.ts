@@ -1,4 +1,4 @@
-import { RFC5424Message, RFC3164Message, LEEFMessage, CEFMessage, CLFMessage, ELFMessage} from './parsedMessage';
+import { RFC5424Message, RFC3164Message, LEEFMessage, CEFMessage, CLFMessage, ELFMessage } from './parsedMessage';
 
 export interface SyslogMessage {
 	date: Date;
@@ -47,34 +47,34 @@ export function parseRFC3164(message: string): RFC3164Message | null {
 }
 
 export function parseLEEF(message: string): LEEFMessage | null {
-    const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|(.+))?/;
-    const match = regex.exec(message);
+	const regex = /LEEF:(\d+\.\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)(?:\|(.+))?/;
+	const match = regex.exec(message);
 
-    if (match) {
-        let nameValuePairs: Record<string, string> = {};
+	if (match) {
+		let nameValuePairs: Record<string, string> = {};
 		let nameValueRaw = '';
 
-        if (match[6]) {
+		if (match[6]) {
 			nameValueRaw = match[6];
-            nameValuePairs = match[6].split('|').reduce((obj: Record<string, string>, pair) => {
-                const [name, value] = pair.split('=');
-                obj[name] = value ? value.replace(/^"|"$/g, '') : '';
-                return obj;
-            }, {});
-        }
+			nameValuePairs = match[6].split('|').reduce((obj: Record<string, string>, pair) => {
+				const [name, value] = pair.split('=');
+				obj[name] = value ? value.replace(/^"|"$/g, '') : '';
+				return obj;
+			}, {});
+		}
 
-        return {
-            version: match[1],
-            deviceVendor: match[2],
-            deviceProduct: match[3],
-            deviceVersion: match[4],
-            eventId: match[5],
-            nameValuePairs,
+		return {
+			version: match[1],
+			deviceVendor: match[2],
+			deviceProduct: match[3],
+			deviceVersion: match[4],
+			eventId: match[5],
+			nameValuePairs,
 			nameValueRaw,
-        };
-    }
+		};
+	}
 
-    return null;
+	return null;
 }
 
 
@@ -87,31 +87,31 @@ export function parseJSON(message: string): object | null {
 }
 
 export function parseCEF(message: string): CEFMessage | null {
-    const regex = /CEF:(\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
-    const match = regex.exec(message);
+	const regex = /CEF:(\d+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|(.+)/;
+	const match = regex.exec(message);
 
-    if (match) {
+	if (match) {
 		const extensionRaw = match[8];
-        const extension = match[8].split(' ').reduce((obj: Record<string, string>, pair: string) => {
-            const [name, value] = pair.split('=');
-            obj[name] = value;
-            return obj;
-        }, {});
+		const extension = match[8].split(' ').reduce((obj: Record<string, string>, pair: string) => {
+			const [name, value] = pair.split('=');
+			obj[name] = value;
+			return obj;
+		}, {});
 
-        return {
-            cefVersion: match[1],
-            deviceVendor: match[2],
-            deviceProduct: match[3],
-            deviceVersion: match[4],
-            deviceEventClassId: match[5],
-            name: match[6],
-            severity: match[7],
-            extension,
+		return {
+			cefVersion: match[1],
+			deviceVendor: match[2],
+			deviceProduct: match[3],
+			deviceVersion: match[4],
+			deviceEventClassId: match[5],
+			name: match[6],
+			severity: match[7],
+			extension,
 			extensionRaw,
-        };
-    }
+		};
+	}
 
-    return null;
+	return null;
 }
 
 

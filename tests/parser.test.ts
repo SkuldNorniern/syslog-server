@@ -56,7 +56,8 @@ describe('Parser Tests', () => {
 			nameValuePairs: {
 				cat: '',
 				severity: ''
-			}
+			},
+			nameValueRaw: 'cat=|severity='
 		});
 	});
 
@@ -72,7 +73,8 @@ describe('Parser Tests', () => {
 			nameValuePairs: {
 				cat: 'Security',
 				severity: ''
-			}
+			},
+			nameValueRaw: 'cat=Security|severity='
 		});
 	});
 
@@ -88,7 +90,8 @@ describe('Parser Tests', () => {
 			nameValuePairs: {
 				cat: 'Security',
 				severity: 'High'
-			}
+			},
+			nameValueRaw: 'cat=\"Security\"|severity=\"High\"'
 		});
 	});
 
@@ -101,7 +104,8 @@ describe('Parser Tests', () => {
 			deviceProduct: 'Product',
 			deviceVersion: 'Version',
 			eventId: 'EventID',
-			nameValuePairs: {}
+			nameValuePairs: {},
+			nameValueRaw: ''
 		});
 	});
 
